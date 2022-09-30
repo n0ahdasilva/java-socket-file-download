@@ -14,8 +14,8 @@
  *      ClientWorkerThread.run()
  * 
  *  NOTES :
- *      Version 0.0.1b had inconsistent issues with send/receive files over 1MB. Bytes_read variable did not
- *      match the file data array 'mybytearray' causing EOTF exceptions. Need to find a solution. 
+ *      - In the ThreadPoolExecutor, core pool size is the minimum number of threads to keep alive, while 
+ *      the max pool size is the maximum number of threads to be run at once. Our pool is too small for it to matter.
  * 
  *  AUTHOR(S) : Noah Arcand Da Silva    START DATE : 2022.09.21 (YYYY.MM.DD)
  *
@@ -29,6 +29,7 @@
  *  0.0.1a      2022.09.21  Noah            Creation of project.
  *  0.0.1b      2022.09.23  Noah            Allows for the downloading of server files.
  *  0.0.1c      2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
+ *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
 
@@ -51,10 +52,14 @@ public class myfileserver
 class multiThreadServer extends Thread
 
 {
-    private ServerSocket server_socket; // Initialize the Server Socket.
-    
+    private ServerSocket server_socket;     // Initialize the Server Socket.
+    private Socket c_socket;                // Initialize the client socket connection used by the server.
+
+    private ThreadPoolExecutor executor;            // Initialize the thread pool for multi-tasking and queuing.
+    private BlockingQueue<Runnable> blocking_queue; // Initialize the thread queue to store incoming requests.
+
     public final int PORT = 8000;       // Set the port number of the server.
-    int nThreads = 2;                   // Set the max number of simultaneous working threads.
+    int nThreads = 10;                  // Set the max number of simultaneous working threads.
 
     /**
      * Create a pool of threads when the server launches, store incoming connections 
@@ -65,32 +70,37 @@ class multiThreadServer extends Thread
     public multiThreadServer()
     {
         try
-        {   
+        {   // Starting the server socket on designated port.
             server_socket = new ServerSocket(PORT);
-            ExecutorService executor = new ThreadPoolExecutor
-            (
-                nThreads, 
-                nThreads, 
-                0L, 
-                TimeUnit.MILLISECONDS, 
-                new ArrayBlockingQueue<>(nThreads),
-                new ThreadPoolExecutor.CallerRunsPolicy()
-            );
+            // Setting up the thread queue, using a
+            // runnable (used by class intended to be executed by a thread).
+            blocking_queue =  new LinkedBlockingQueue<Runnable>();
+            // Setting up an thread pool with a max size of 10 threads.
+            // Sending requests to queue when all threads are busy.
+            executor = new ThreadPoolExecutor(
+                nThreads, nThreads, 5, TimeUnit.SECONDS, blocking_queue, 
+                new ThreadPoolExecutor.AbortPolicy());
+                // Set a timeout of 5 seconds, but it is being used in this case, since it is 
+                // using a fixed pool of threads, thread pool size: core pool = max pool.
+
+            // We need to start all core threads when starting the server.
+            executor.prestartAllCoreThreads();
 
             while(true)
             {
-                Socket c_socket = server_socket.accept();
-                executor.execute(new ClientWorkerThread(c_socket));
+                c_socket = server_socket.accept();
+                blocking_queue.offer(new ClientWorkerThread(c_socket));
             }
-            //executor.close();
         }
         catch (Exception ex)
         {
             try
             {
                 server_socket.close();
+                executor.shutdown();
+                executor.awaitTermination(500, TimeUnit.MILLISECONDS);
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -99,7 +109,7 @@ class multiThreadServer extends Thread
 }
 
 
-class ClientWorkerThread extends Thread
+class ClientWorkerThread implements Runnable
 {
     private Socket client_socket;       // Setting up socket variables.
 
@@ -117,6 +127,10 @@ class ClientWorkerThread extends Thread
 
     private int bytes = 0;              // Size of file data chunks.
 
+
+    /*
+     * Set the client worker thread to the client socket.
+     */
     ClientWorkerThread(Socket c_socket)
     {
         client_socket = c_socket;
@@ -170,6 +184,9 @@ class ClientWorkerThread extends Thread
             // Telling the client we are starting the process of downloading the file.
             d_out.writeUTF("Downloading file " + filename);
 
+            // Adding a pause to the client program for testing in development.
+            // Thread.sleep(5000);
+
             // Start the File and Buffered Streams needed for file transfers.
             f_in = new FileInputStream(server_file);
 
@@ -192,7 +209,7 @@ class ClientWorkerThread extends Thread
             System.out.println("REQ " + serverStatistics.tReq + ": File transfer complete");
             
         }
-        catch (IOException e)
+        catch (Exception e)
         {   // If the program fails, print the error.
             e.printStackTrace();
         }

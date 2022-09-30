@@ -12,7 +12,7 @@
  *      SocketHandling.run()
  * 
  *  NOTES :
- *      Version 0.0.1b had inconsistent issues with send/receive files over 1MB. Bytes_read variable did not
+ *      - Version 0.0.1b had inconsistent issues with send/receive files over 1MB. Bytes_read variable did not
  *      match the file data array 'mybytearray' causing EOTF exceptions. Need to find a solution.
  * 
  *  AUTHOR(S) : Noah Arcand Da Silva    START DATE : 2022.09.21 (YYYY.MM.DD)
@@ -27,6 +27,7 @@
  *  0.0.1a      2022.09.21  Noah            Creation of project.
  *  0.0.1b      2022.09.23  Noah            Allows for the downloading of server files.
  *  0.0.1c      2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
+ *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
 
@@ -105,9 +106,10 @@ class SocketHandling extends Thread
                 filesize -= bytes;  // Decrease the size of the file, by the buffer chunk size.
             }
             f_out.close();                      // Close the file stream needed for the transfer.
+
             System.out.println(d_in.readUTF()); // Receive message from server, download is completed.
         }
-        catch (IOException e)
+        catch (Exception e)
         {   // If the program fails, print the error.
             e.printStackTrace();
         }
