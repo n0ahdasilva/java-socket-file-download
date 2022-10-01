@@ -128,7 +128,7 @@ class ClientWorkerThread implements Runnable
     private int bytes = 0;              // Size of file data chunks.
 
 
-    /*
+    /**
      * Set the client worker thread to the client socket.
      */
     ClientWorkerThread(Socket c_socket)
