@@ -65,7 +65,7 @@ class SocketHandling extends Thread
 
     // Variables to receive from server.
     private boolean file_found = false; // Determine if file request by client exists.
-    private int BUFFER = 1024;          // Setting up buffer size of 1KB.
+    private int BUFFER = 4096;          // Setting up buffer size of 4KB.
     private long filesize;              // Server's file size to download.
 
     private int bytes;                  // Size of file data chunks.
@@ -104,7 +104,7 @@ class SocketHandling extends Thread
 
             bytes = 0;
             // Initialize a byte array same size as the buffer.
-            byte[] buffer_data_array  = new byte[4 * BUFFER];
+            byte[] buffer_data_array  = new byte[BUFFER];
             // Downloading file, reading from data stream, one chunk at time, until we reach the end.
             while (filesize > 0 && (bytes = d_in.read(buffer_data_array,
                 0, (int)Math.min(buffer_data_array.length, filesize))) != -1)

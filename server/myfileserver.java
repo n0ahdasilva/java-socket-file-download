@@ -125,7 +125,7 @@ class ClientWorkerThread implements Runnable
     // Variables to send to client.
     private File server_file;           // Initialize the file variable to read from
     private boolean file_found = false; // Determine if file request by client exists.
-    private int BUFFER = 1024;          // Setting up buffer size of 1KB.
+    private int BUFFER = 4096;          // Setting up buffer size of 4KB.
 
     private int bytes = 0;              // Size of file data chunks.
 
@@ -201,7 +201,7 @@ class ClientWorkerThread implements Runnable
             
             bytes = 0;
             // Initialize a byte array same size as the buffer.
-            byte[] buffer_data_array  = new byte[4 * BUFFER];
+            byte[] buffer_data_array  = new byte[BUFFER];
             // Read file input data, breaking it into chunks.
             while ((bytes = f_in.read(buffer_data_array)) != -1)
             {   // Write chunks into data stream for client to download.
