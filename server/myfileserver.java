@@ -111,6 +111,8 @@ class multiThreadServer extends Thread
 
 class ClientWorkerThread implements Runnable
 {
+    private String java_file_path;      // Initialize the variable to store the .java file's directory.
+
     private Socket client_socket;       // Setting up socket variables.
 
     // Initializing stream variables.
@@ -126,7 +128,6 @@ class ClientWorkerThread implements Runnable
     private int BUFFER = 1024;          // Setting up buffer size of 1KB.
 
     private int bytes = 0;              // Size of file data chunks.
-
 
     /**
      * Set the client worker thread to the client socket.
@@ -153,7 +154,12 @@ class ClientWorkerThread implements Runnable
             System.out.println("REQ " + serverStatistics.tReq + ": File " + filename 
                 + " requested from " + client_socket.getInetAddress());
             
-            server_file = new File("files/" + filename);   // Import file data.
+            java_file_path =    // Set the .java file's directory to the variable.
+                myfileserver.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            // Remove the filename from the path.
+            java_file_path = java_file_path.substring(0, java_file_path.lastIndexOf("/") + 1);
+            
+            server_file = new File(java_file_path + "files/" + filename);  // Import file data.
             if (server_file.exists())
             {   // Update the client, file found.
                 d_out.writeUTF("File " + filename + " found at server");

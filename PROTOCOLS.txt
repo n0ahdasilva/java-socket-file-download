@@ -1,0 +1,25 @@
+1.  myfileclient.java asks myfileserver.java for a text file
+        The client sends a packet request to the server to find whether ascii.txt exists or 
+        not. The server will send the client an acknowledgement of whether the file exists or not.
+
+        The internet and the transport layer are at work here. The internet layer is responsible 
+        for ensuring that the data is sent fast and accurately and also for reassembling the 
+        data request packet at the server.
+
+        The transport layer provides a connection between the server and the client. The server 
+        acknowledges it has received data from the client and ensures that the client acknowledges 
+        the packets it receives.
+
+2.  myfileserver.java will check for the text file in the current directory and then send 
+    an acknowledgement to myfileclient.java that the text file exists
+        Once the client finds out that the file exists in the server, the server will check for 
+        the file in the current directory. If the file is found, the server will send an 
+        acknowledgement to the client that the file exists.
+
+        The transport and internet layer are involved in this step due to the sending and 
+        acknowledging of packets from the client and server.
+
+3.  myfileclient.java outputs to the console that it found the file in the server
+        After the file has been found and acknowledgement packets have been sent and received, 
+        the client will print in the console terminal that the file has been found on the 
+        server and display the log of sent and acknowledged packets.
