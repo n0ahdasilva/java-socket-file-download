@@ -17,3 +17,5 @@ There is also a folder name *downloads* along with the java file, where the down
 The `myfileserver.java` file contains the ***multiThreadServer*** class; where we handle all of our server/client socket, multi-threading, and thread queuing code. The ***ClientWorkerThread***, which is ran by the ***multiThreadServer*** class on demand, contains all of our server function code when communicating with the client.
 
 There is also a folder name *files* which contains all the data from the server that a client could download when contacting the server.
+
+**The server has its port hard coded at port 8000.**
