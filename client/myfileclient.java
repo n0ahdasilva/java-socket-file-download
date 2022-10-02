@@ -54,6 +54,8 @@ public class myfileclient
 
 class SocketHandling extends Thread
 {   
+    private String java_file_path;      // Initialize the variable to store the .java file's directory.
+
     private Socket socket;  // Setting up client socket variable.
     
     // Initializing stream variables.
@@ -88,8 +90,13 @@ class SocketHandling extends Thread
 
             System.out.println(d_in.readUTF()); // Receive message from server, downloading file.
 
+            java_file_path =    // Set the .java file's directory to the variable.
+                myfileclient.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            // Remove the filename from the path.
+            java_file_path = java_file_path.substring(0, java_file_path.lastIndexOf("/") + 1);
+
             // Getting ready to download the file.
-            f_out = new FileOutputStream("downloads/" + filename);
+            f_out = new FileOutputStream(java_file_path + "downloads/" + filename);
             
             // Receive the file and buffer size from the server.
             filesize = d_in.readLong();
