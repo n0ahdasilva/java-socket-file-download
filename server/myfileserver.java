@@ -13,6 +13,7 @@
  *      ClientWorkerThread.ClientWorkerThread()
  *      ClientWorkerThread.run()
  *      serverTime.current_time()
+ *      fileLogging.log_exception()
  * 
  *  NOTES :
  *      - In the ThreadPoolExecutor, core pool size is the minimum number of threads to keep alive, while 
@@ -60,7 +61,7 @@ class multiThreadServer extends Thread
     private BlockingQueue<Runnable> blocking_queue; // Initialize the thread queue to store incoming requests.
 
     public final int PORT = 8000;       // Set the port number of the server.
-    int nThreads = 2;                  // Set the max number of simultaneous working threads.
+    int nThreads = 1;                  // Set the max number of simultaneous working threads.
 
     Scanner sc = new Scanner(System.in);    // Enable server to listen to keyboard inputs.
 
@@ -97,17 +98,18 @@ class multiThreadServer extends Thread
                 blocking_queue.offer(new ClientWorkerThread());
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception e)
+        {   // If an error occured, attempt to properly close the socket and executor.
             try
             {
                 server_socket.close();
                 executor.shutdown();
                 executor.awaitTermination(500, TimeUnit.MILLISECONDS);
+                fileLogging.log_exception(e);   // Write the error to the log file.
             }
-            catch (Exception e)
-            {
-                e.printStackTrace();
+            catch (Exception ee)
+            {   // If an error occured while trying to close the application, write it to the log file.
+                fileLogging.log_exception(ee);
             }
         }
     }
@@ -149,9 +151,15 @@ class ClientWorkerThread implements Runnable
             client_ip = client_socket.getInetAddress().toString();
         }
         catch (IOException e)
-        {
-            e.printStackTrace();
+        {   // If an error occured when trying to connect to client.
+            System.out.println(serverTime.current_time()
+                + "An error occurred while trying to connect to client");
         }
+        catch (Exception e)
+        {   // If another type of error occured, write it to the log file.
+            fileLogging.log_exception(e);
+        }
+        
     }
     /**
      * Works with client (Allows to download files)
@@ -240,8 +248,8 @@ class ClientWorkerThread implements Runnable
             
         }
         catch (Exception e)
-        {   // If the program fails, print the error.
-            e.printStackTrace();
+        {   // If the program fails, write it to the log file.
+            fileLogging.log_exception(e);
         }
         finally 
         {
@@ -254,10 +262,10 @@ class ClientWorkerThread implements Runnable
                 client_socket.close();
                 // Notify the server when the client disconnects.
                 System.out.println(serverTime.current_time() + "Client " + client_ip + " disconnected");
-            } 
-            catch (IOException e) 
-            {   // If it fails, print the error.
-                e.printStackTrace();
+            }
+            catch (Exception e)
+            {   // If an error occured while trying to close the application, write it to the log file.
+                fileLogging.log_exception(e);
             }
         }
     }
@@ -275,11 +283,58 @@ class serverTime
 {   // Setting up variables to show time of ouputs.
     private static Date sys_time;
     private static SimpleDateFormat time_format = 
-        new SimpleDateFormat("[HH:mm:ss SSS] ");
+        new SimpleDateFormat("[HH:mm:ss.SSS] ");
 
     public static String current_time()
     {
         sys_time = new Date();
         return time_format.format(sys_time);
+    }
+}
+
+
+class fileLogging
+{
+    private static File log_file;           // 
+    private static PrintStream ps;          // 
+    private static FileOutputStream fos;    // 
+
+    private static StringWriter sw;
+    private static PrintWriter pw;
+    private static String stack_trace_str;
+
+    /*
+     * Function to print the stack trace from exceptions into a log file,
+     * instead of printing it to the screen.
+     */
+
+    public static void log_exception(Exception ex)
+    {
+        try
+        {
+            // Open file named server.log
+            log_file = new File("server.log");
+            fos = new FileOutputStream(log_file);   // Start file output stream to write the logs to.
+            ps = new PrintStream(fos);              // Start a print stream pointing to the file output.
+            System.setErr(ps);                      // Set the system error output stream to our file.
+            
+            // Turn the exception stack trace into a string.
+            sw = new StringWriter();
+            pw = new PrintWriter(sw);
+            ex.printStackTrace(pw);
+            stack_trace_str = sw.toString();
+
+            System.err.println(stack_trace_str); // Print the logs into the file.
+            
+            // Close our streams.
+            pw.close();
+            sw.close();
+            ps.close();
+            fos.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }

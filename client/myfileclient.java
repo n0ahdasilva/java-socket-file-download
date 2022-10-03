@@ -11,6 +11,7 @@
  *      myfileclient.main()
  *      SocketHandling.run()
  *      clientTime.curent_time()
+ *      fileLogging.log_exception()
  * 
  *  NOTES :
  *      - Version 0.0.1b had inconsistent issues with send/receive files over 1MB. Bytes_read variable did not
@@ -83,11 +84,16 @@ class SocketHandling extends Thread
             {   // Open a new socket session.
                 socket = new Socket(server_ip, server_port);
             }
-            catch (Exception e)
+            catch (ConnectException c_e)
             {   // If the socket cannot establish a connection, close the client program.
                 System.out.println(clientTime.current_time() + "Cannot connect to the server "+ server_ip + ":" + 
                     server_port + "\n" + "Either the given address/port is invalid or the server is closed.");
+                fileLogging.log_exception(c_e); // Write error to the log file.
                 System.exit(0);
+            }
+            catch (Exception e)
+            {   // If another type of error occured, write it to the log file.
+                fileLogging.log_exception(e);
             }
 
             // Start Data Types IO Streaming between the client and the server. 
@@ -132,9 +138,19 @@ class SocketHandling extends Thread
 
             System.out.println(d_in.readUTF()); // Receive message from server, download is completed.
         }
+        catch (SocketException e)
+        {   // If the error is a 'SocketException: Connection reset' error,
+            // tell the client that they have lost connection to the server.
+            if (e.toString().contains("java.net.SocketException: Connection reset"))
+            {
+                System.out.println(clientTime.current_time() + "Lost connection to server");
+            }
+            // Then writ the error to the log file.
+            fileLogging.log_exception(e);
+        }
         catch (Exception e)
-        {   // If the program fails, print the error.
-            e.printStackTrace();
+        {   // If the program fails, write it to the log file.
+            fileLogging.log_exception(e);
         }
         finally 
         {
@@ -146,9 +162,13 @@ class SocketHandling extends Thread
                 if (f_out != null) f_out.close();
                 socket.close();
             }
-            catch (IOException e)
-            {   // If it fails, print the error.
-                e.printStackTrace();
+            catch (SocketException e)
+            {   // SocketException already catched above, no duplicates.
+                return;
+            }
+            catch (Exception e)
+            {   // If another type of error occured, write it to the log file.
+                fileLogging.log_exception(e);
             }
         }
 
@@ -160,11 +180,57 @@ class clientTime
 {   // Setting up variables to show time of ouputs.
     private static Date sys_time;
     private static SimpleDateFormat time_format = 
-        new SimpleDateFormat("[HH:mm:ss SSS] ");
+        new SimpleDateFormat("[HH:mm:ss.SSS] ");
 
     public static String current_time()
     {
         sys_time = new Date();
         return time_format.format(sys_time);
+    }
+}
+
+
+class fileLogging
+{
+    private static File log_file;           // 
+    private static PrintStream ps;          // 
+    private static FileOutputStream fos;    // 
+
+    private static StringWriter sw;
+    private static PrintWriter pw;
+    private static String stack_trace_str;
+
+    /*
+     * Function to print the stack trace from exceptions into a log file,
+     * instead of printing it to the screen.
+     */
+    public static void log_exception(Exception ex)
+    {
+        try
+        {
+            // Open file named server.log
+            log_file = new File("client.log");
+            fos = new FileOutputStream(log_file);   // Start file output stream to write the logs to.
+            ps = new PrintStream(fos);              // Start a print stream pointing to the file output.
+            System.setErr(ps);                      // Set the system error output stream to our file.
+            
+            // Turn the exception stack trace into a string.
+            sw = new StringWriter();
+            pw = new PrintWriter(sw);
+            ex.printStackTrace(pw);
+            stack_trace_str = sw.toString();
+
+            System.err.println(stack_trace_str); // Print the logs into the file.
+            
+            // Close our streams.
+            pw.close();
+            sw.close();
+            ps.close();
+            fos.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }
