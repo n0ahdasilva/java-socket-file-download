@@ -10,6 +10,7 @@
  *  FUNCTIONS :
  *      myfileclient.main()
  *      SocketHandling.run()
+ *      clientTime.curent_time()
  * 
  *  NOTES :
  *      - Version 0.0.1b had inconsistent issues with send/receive files over 1MB. Bytes_read variable did not
@@ -33,7 +34,9 @@
 
 package client;
 import java.net.*;
+import java.text.*;
 import java.io.*;
+import java.util.*;
 
 
 public class myfileclient
@@ -73,21 +76,25 @@ class SocketHandling extends Thread
     public void run(String server_ip, int server_port, String filename)
     {
         try
-        {   // Open a new socket session.
+        {
+            System.out.println(clientTime.current_time() + "Connecting to " + server_ip + ":" + server_port);
+            
             try
-            {
+            {   // Open a new socket session.
                 socket = new Socket(server_ip, server_port);
             }
             catch (Exception e)
             {   // If the socket cannot establish a connection, close the client program.
-                System.out.println("Cannot locate server, either the " +
-                    "given IP or port is incorrect.");
+                System.out.println(clientTime.current_time() + "Cannot connect to the server "+ server_ip + ":" + 
+                    server_port + "\n" + "Either the given address/port is invalid or the server is closed.");
                 System.exit(0);
             }
+
             // Start Data Types IO Streaming between the client and the server. 
             d_in = new DataInputStream(socket.getInputStream());
             d_out = new DataOutputStream(socket.getOutputStream());
 
+            System.out.println(d_in.readUTF()); // Receive message from server, client is connected.
             d_out.writeUTF(filename);   // Send filename to the server.
 
             System.out.println(d_in.readUTF()); // Receive message from server, file [not] found.
@@ -133,6 +140,7 @@ class SocketHandling extends Thread
         {
             try
             {   // Attempt to close the socket and other tools.
+                System.out.println(d_in.readUTF());
                 if (d_in != null) d_in.close();
                 if (d_out != null) d_out.close();
                 if (f_out != null) f_out.close();
@@ -144,5 +152,19 @@ class SocketHandling extends Thread
             }
         }
 
+    }
+}
+
+
+class clientTime
+{   // Setting up variables to show time of ouputs.
+    private static Date sys_time;
+    private static SimpleDateFormat time_format = 
+        new SimpleDateFormat("[HH:mm:ss SSS] ");
+
+    public static String current_time()
+    {
+        sys_time = new Date();
+        return time_format.format(sys_time);
     }
 }

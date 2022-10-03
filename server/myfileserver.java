@@ -12,6 +12,7 @@
  *      multiThreadingServer.multiThreadingServer()
  *      ClientWorkerThread.ClientWorkerThread()
  *      ClientWorkerThread.run()
+ *      serverTime.current_time()
  * 
  *  NOTES :
  *      - In the ThreadPoolExecutor, core pool size is the minimum number of threads to keep alive, while 
@@ -25,18 +26,20 @@
  *      - Altered the file transfer mechanism to address big file download issues. Needed to
  *      implement a buffer size to segment files into chunks, and transfer one chunk at a time.
  * 
- *  VERSION     DATE        WHO             DETAILS
- *  0.0.1a      2022.09.21  Noah            Creation of project.
- *  0.0.1b      2022.09.23  Noah            Allows for the downloading of server files.
- *  0.0.1c      2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
- *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
+ *  VERSION      DATE        WHO             DETAILS
+ *  0.0.1a       2022.09.21  Noah            Creation of project.
+ *  0.0.1b       2022.09.23  Noah            Allows for the downloading of server files.
+ *  0.0.1c       2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
+ *  0.0.1d       2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
 
 package server;
 import java.net.*;
+import java.text.*;
 import java.io.*;
 import java.util.concurrent.*;
+import java.util.*;
 
 
 public class myfileserver 
@@ -50,10 +53,8 @@ public class myfileserver
 
 
 class multiThreadServer extends Thread
-
-{
-    private ServerSocket server_socket;     // Initialize the Server Socket.
-    private Socket c_socket;                // Initialize the client socket connection used by the server.
+{   
+    public static ServerSocket server_socket;       // Initialize the Server Socket.
 
     private ThreadPoolExecutor executor;            // Initialize the thread pool for multi-tasking and queuing.
     private BlockingQueue<Runnable> blocking_queue; // Initialize the thread queue to store incoming requests.
@@ -61,17 +62,21 @@ class multiThreadServer extends Thread
     public final int PORT = 8000;       // Set the port number of the server.
     int nThreads = 2;                  // Set the max number of simultaneous working threads.
 
+    Scanner sc = new Scanner(System.in);    // Enable server to listen to keyboard inputs.
+
     /**
-     * Create a pool of threads when the server launches, store incoming connections 
-     * in a queue, and have the threads in the pool progressively remove connections 
-     * from the queue and process them. This is particularly simple since the operating 
-     * system does in fact store the incoming connections in a queue.
+     *  Create a pool of threads when the server launches, store incoming connections 
+     *  in a queue, and have the threads in the pool progressively remove connections 
+     *  from the queue and process them. This is particularly simple since the operating 
+     *  system does in fact store the incoming connections in a queue.
      */
     public multiThreadServer()
     {
         try
         {   // Starting the server socket on designated port.
             server_socket = new ServerSocket(PORT);
+            System.out.println(serverTime.current_time() + "Listening on " 
+                + "127.0.0.1" + ":" + server_socket.getLocalPort());
             // Setting up the thread queue, using a
             // runnable (used by class intended to be executed by a thread).
             blocking_queue =  new LinkedBlockingQueue<Runnable>();
@@ -88,8 +93,8 @@ class multiThreadServer extends Thread
 
             while(true)
             {
-                c_socket = server_socket.accept();
-                blocking_queue.offer(new ClientWorkerThread(c_socket));
+                // If a client want to connect, add it to queue.
+                blocking_queue.offer(new ClientWorkerThread());
             }
         }
         catch (Exception ex)
@@ -114,6 +119,7 @@ class ClientWorkerThread implements Runnable
     private String java_file_path;      // Initialize the variable to store the .java file's directory.
 
     private Socket client_socket;       // Setting up socket variables.
+    private String client_ip;           // Client's ip address.
 
     // Initializing stream variables.
     private DataInputStream d_in;       // Receive data from client.
@@ -129,14 +135,24 @@ class ClientWorkerThread implements Runnable
 
     private int bytes = 0;              // Size of file data chunks.
 
-    /**
-     * Set the client worker thread to the client socket.
-     */
-    ClientWorkerThread(Socket c_socket)
-    {
-        client_socket = c_socket;
-    }
 
+    /**
+     * Constructor function for ClientWorker Thread.
+     * Establishing a socket connection between server and client.
+     */
+    public ClientWorkerThread()
+    {
+        try
+        {   // Once the client passed the queue, connect it to the sever.
+            client_socket = multiThreadServer.server_socket.accept();
+            // Save the client's ip address.
+            client_ip = client_socket.getInetAddress().toString();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
     /**
      * Works with client (Allows to download files)
      */
@@ -147,12 +163,16 @@ class ClientWorkerThread implements Runnable
             d_in = new DataInputStream(client_socket.getInputStream());
             d_out = new DataOutputStream(client_socket.getOutputStream());
 
+            // Notify the server when the client connects.
+            System.out.println(serverTime.current_time() + "Client " + client_ip + " connected to server");
+            // Send message to client saying he is connected to server.
+            d_out.writeUTF(serverTime.current_time() + "Connection established.");
             filename = d_in.readUTF();  // Receive requested filename from client.
 
             // Updating server statistics for file request.
             serverStatistics.tReq++;
-            System.out.println("REQ " + serverStatistics.tReq + ": File " + filename 
-                + " requested from " + client_socket.getInetAddress());
+            System.out.println(serverTime.current_time() + "REQ " + serverStatistics.tReq
+                + ": File " + filename + " requested from " + client_ip);
             
             java_file_path =    // Set the .java file's directory to the variable.
                 myfileserver.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
@@ -162,33 +182,36 @@ class ClientWorkerThread implements Runnable
             server_file = new File(java_file_path + "files/" + filename);  // Import file data.
             if (server_file.exists())
             {   // Update the client, file found.
-                d_out.writeUTF("File " + filename + " found at server");
+                d_out.writeUTF(serverTime.current_time() +"File " + filename + " found at server");
                 file_found = true;
                 // Updating server statistics for file lookup request.
                 serverStatistics.sReq++;
-                System.out.println("REQ " + serverStatistics.tReq + ": Successful");
-                System.out.println("REQ " + serverStatistics.tReq 
+                System.out.println(serverTime.current_time() + "REQ " + serverStatistics.tReq 
+                    + ": Successful");
+                System.out.println(serverTime.current_time() + "REQ " + serverStatistics.tReq 
                     + ": Total Successful requests so far = " + serverStatistics.sReq);
                 
             }
             else
             {   // Update the client, file not found.
-                d_out.writeUTF("File " + filename + " not found at server");
+                d_out.writeUTF(serverTime.current_time() + "File " + filename 
+                    + " not found at server");
                 file_found = false;
                 // Updating server statistics for file lookup request.
-                System.out.println("REQ " + serverStatistics.tReq + ": Not Successful");
+                System.out.println(serverTime.current_time() + "REQ "
+                    + serverStatistics.tReq + ": Not Successful");
             }
 
             // Send out the request statistics to the client
-            d_out.writeUTF("Server handled " + serverStatistics.tReq + " requests, "
-                + serverStatistics.sReq + " requests were successful");
+            d_out.writeUTF(serverTime.current_time() + "Server handled " + serverStatistics.tReq
+                + " requests, " + serverStatistics.sReq + " requests were successful");
              
             d_out.writeBoolean(file_found); // Tell the client if file exists.
             // If the file is not found, we can skip to closing the client socket and thread.
             if (!file_found) return;
 
             // Telling the client we are starting the process of downloading the file.
-            d_out.writeUTF("Downloading file " + filename);
+            d_out.writeUTF(serverTime.current_time() + "Downloading file " + filename);
 
             // Adding a pause to the client program for testing in development.
             Thread.sleep(10000);
@@ -210,9 +233,10 @@ class ClientWorkerThread implements Runnable
             }
             f_in.close();   // Close the streams needed for the transfer.
 
-            d_out.writeUTF("Download complete");
+            d_out.writeUTF(serverTime.current_time() + "Download complete");
 
-            System.out.println("REQ " + serverStatistics.tReq + ": File transfer complete");
+            System.out.println(serverTime.current_time() + "REQ " + serverStatistics.tReq 
+                + ": File transfer complete");
             
         }
         catch (Exception e)
@@ -223,10 +247,13 @@ class ClientWorkerThread implements Runnable
         {
             try 
             {   // Attempt to close the socket and other tools.
+                d_out.writeUTF(serverTime.current_time() + "Closing connection...");
                 if (d_in != null) d_in.close();
                 if (d_out != null) d_out.close();
                 if (f_in != null) f_in.close();
                 client_socket.close();
+                // Notify the server when the client disconnects.
+                System.out.println(serverTime.current_time() + "Client " + client_ip + " disconnected");
             } 
             catch (IOException e) 
             {   // If it fails, print the error.
@@ -241,4 +268,18 @@ class serverStatistics
 {
     public static int tReq; // Maintains count of total requests.
     public static int sReq; // Maintains count of successful requests.
+}
+
+
+class serverTime
+{   // Setting up variables to show time of ouputs.
+    private static Date sys_time;
+    private static SimpleDateFormat time_format = 
+        new SimpleDateFormat("[HH:mm:ss SSS] ");
+
+    public static String current_time()
+    {
+        sys_time = new Date();
+        return time_format.format(sys_time);
+    }
 }
