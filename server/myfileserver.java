@@ -59,7 +59,7 @@ class multiThreadServer extends Thread
     private BlockingQueue<Runnable> blocking_queue; // Initialize the thread queue to store incoming requests.
 
     public final int PORT = 8000;       // Set the port number of the server.
-    int nThreads = 10;                  // Set the max number of simultaneous working threads.
+    int nThreads = 2;                  // Set the max number of simultaneous working threads.
 
     /**
      * Create a pool of threads when the server launches, store incoming connections 
@@ -191,7 +191,7 @@ class ClientWorkerThread implements Runnable
             d_out.writeUTF("Downloading file " + filename);
 
             // Adding a pause to the client program for testing in development.
-            // Thread.sleep(5000);
+            Thread.sleep(10000);
 
             // Start the File and Buffered Streams needed for file transfers.
             f_in = new FileInputStream(server_file);

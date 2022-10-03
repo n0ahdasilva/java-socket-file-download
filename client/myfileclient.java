@@ -74,7 +74,16 @@ class SocketHandling extends Thread
     {
         try
         {   // Open a new socket session.
-            socket = new Socket(server_ip, server_port);
+            try
+            {
+                socket = new Socket(server_ip, server_port);
+            }
+            catch (Exception e)
+            {   // If the socket cannot establish a connection, close the client program.
+                System.out.println("Cannot locate server, either the " +
+                    "given IP or port is incorrect.");
+                System.exit(0);
+            }
             // Start Data Types IO Streaming between the client and the server. 
             d_in = new DataInputStream(socket.getInputStream());
             d_out = new DataOutputStream(socket.getOutputStream());
