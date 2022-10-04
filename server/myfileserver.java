@@ -27,11 +27,11 @@
  *      - Altered the file transfer mechanism to address big file download issues. Needed to
  *      implement a buffer size to segment files into chunks, and transfer one chunk at a time.
  * 
- *  VERSION      DATE        WHO             DETAILS
- *  0.0.1a       2022.09.21  Noah            Creation of project.
- *  0.0.1b       2022.09.23  Noah            Allows for the downloading of server files.
- *  0.0.1c       2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
- *  0.0.1d       2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
+ *  VERSION     DATE        WHO             DETAILS
+ *  0.0.1a      2022.09.21  Noah            Creation of project.
+ *  0.0.1b      2022.09.23  Noah            Allows for the downloading of server files.
+ *  0.0.1c      2022.09.26  Noah            Breaks up files in chunks to allow large downloads.
+ *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
 
