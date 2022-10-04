@@ -34,8 +34,6 @@
  *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
-
-package server;
 import java.net.*;
 import java.text.*;
 import java.io.*;
@@ -61,7 +59,7 @@ class multiThreadServer extends Thread
     private BlockingQueue<Runnable> blocking_queue; // Initialize the thread queue to store incoming requests.
 
     public final int PORT = 8000;       // Set the port number of the server.
-    int nThreads = 1;                  // Set the max number of simultaneous working threads.
+    int nThreads = 10;                  // Set the max number of simultaneous working threads.
 
     Scanner sc = new Scanner(System.in);    // Enable server to listen to keyboard inputs.
 
@@ -220,9 +218,6 @@ class ClientWorkerThread implements Runnable
 
             // Telling the client we are starting the process of downloading the file.
             d_out.writeUTF(serverTime.current_time() + "Downloading file " + filename);
-
-            // Adding a pause to the client program for testing in development.
-            Thread.sleep(10000);
 
             // Start the File and Buffered Streams needed for file transfers.
             f_in = new FileInputStream(server_file);

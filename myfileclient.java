@@ -32,8 +32,6 @@
  *  0.0.1d      2022.09.30  Noah            Server queues worker threads if there are more than 10 incoming requests.
  */
 
-
-package client;
 import java.net.*;
 import java.text.*;
 import java.io.*;
