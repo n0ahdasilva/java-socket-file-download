@@ -192,13 +192,12 @@ class clientTime
 
 class fileLogging
 {
-    private static File log_file;           // 
-    private static PrintStream ps;          // 
-    private static FileOutputStream fos;    // 
+    private static File log_file;           // File to store log of exception information.
+    private static PrintStream ps;          // Setting up print stream for the error output stream.
+    private static FileOutputStream fos;    // Initializing FOS to write to the log file.
 
-    private static StringWriter sw;
-    private static PrintWriter pw;
-    private static String stack_trace_str;
+    private static PrintWriter pw;          // Turns stack trace object to a text-output.
+    private static StringWriter sw;         // Character stream to convert exception stack trace to string.
 
     /*
      * Function to print the stack trace from exceptions into a log file,
@@ -215,14 +214,13 @@ class fileLogging
             System.setErr(ps);                      // Set the system error output stream to our file.
             
             // Turn the exception stack trace into a string.
-            sw = new StringWriter();
-            pw = new PrintWriter(sw);
-            ex.printStackTrace(pw);
-            stack_trace_str = sw.toString();
-
-            System.err.println(stack_trace_str); // Print the logs into the file.
+            sw = new StringWriter();    // Start character stream.
+            pw = new PrintWriter(sw);   // Write the text-output to the String Writer.
+            ex.printStackTrace(pw);     // Send the esception's stack trace to the Print Writer.
+            // Finally, get the string from the String Writer, and print it to the log file.
+            System.err.println(sw.toString());
             
-            // Close our streams.
+            // Close the opened streams.
             pw.close();
             sw.close();
             ps.close();
