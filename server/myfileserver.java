@@ -323,11 +323,11 @@ class fileLogging
             // Finally, get the string from the String Writer, and print it to the log file.
             System.err.println(sw.toString());
             
-            // Close the opened streams.
-            pw.close();
-            sw.close();
-            ps.close();
-            fos.close();
+            // Close the opened streams if opened.
+            if (pw != null) pw.close();
+            if (sw != null) sw.close();
+            if (ps != null) ps.close();
+            if (fos != null) fos.close();
         }
         catch (Exception e)
         {
