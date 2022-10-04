@@ -1,11 +1,11 @@
 # Socket Programming and Concurrency (File Download Server)
 
 To run the server, simply run the command
-`java server/myfileserver.java`
+`java myfileserver.java`
 from the project directory.
 
 To run the client(s), simply run the command
-`java client/myfileclient.java`*`"host_ip" port_number "filename"`*
+`java myfileclient.java`*`"host_ip" port_number "filename"`*
 from the project directory. **In this example, we use *`"localhost" 8000 "ascii.txt"` for our arguments.***
 
 ## File content
